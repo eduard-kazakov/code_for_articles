@@ -54,26 +54,28 @@ async function renderLegend() {
   container.replaceChildren();
 
   try {
+    // Retrieve legends through NextGIS Frontend
     const legends = await ngwMap.getLegend();
-    // Get the original layer names from the NGW Web Map
-    const response = await fetch(
-      `${NGW_URL}/api/resource/${WEBMAP_ID}`
+
+    // Retrieve Web Map configuration through NgwConnector
+    const webmapResource = await ngwMap.connector.getResource(
+      WEBMAP_ID,
+      { cache: true }
     );
 
-    if (!response.ok) {
-      throw new Error('Failed to retrieve Web Map configuration');
+    if (!webmapResource?.webmap?.root_item) {
+      throw new Error('Web Map configuration is unavailable');
     }
-
-    const webmapResource = await response.json();
 
     const webmapLayers = webmapResource.webmap.root_item.children
       .filter(item => item.item_type === 'layer');
 
+    // Render each layer and its legend
     for (const [index, layer] of legends.entries()) {
       const group = document.createElement('div');
       group.className = 'legend-layer';
 
-      // Use the NGW style resource ID, not the SDK layer ID.
+      // Use the original NGW layer name
       const heading = document.createElement('strong');
 
       heading.textContent =
@@ -82,7 +84,7 @@ async function renderLegend() {
 
       group.append(heading);
 
-      // Retrieve legend symbols from NGW if not loaded yet.
+      // Retrieve legend symbols if necessary
       const symbols = layer.legend?.length
         ? layer.legend
         : (await layer.create?.()) ?? [];
@@ -91,18 +93,21 @@ async function renderLegend() {
         const row = document.createElement('div');
         row.className = 'legend-symbol';
 
-        // Render the original NGW legend symbol
+        // Display the original NGW legend icon
         if (symbol.icon?.data) {
           const icon = document.createElement('img');
 
-          icon.src = `data:image/${symbol.icon.format};base64,${symbol.icon.data}`;
+          icon.src =
+            `data:image/${symbol.icon.format};base64,${symbol.icon.data}`;
+
           icon.alt = symbol.display_name || '';
 
           row.append(icon);
         }
 
-        // Render the symbol label
+        // Display the symbol label
         const label = document.createElement('span');
+
         label.textContent = symbol.display_name || '';
 
         row.append(label);
@@ -112,11 +117,18 @@ async function renderLegend() {
       container.append(group);
     }
 
+    if (!legends.length) {
+      container.textContent = 'No legend available.';
+    }
+
   } catch (error) {
     console.error('Failed to load map legend:', error);
+
     container.textContent = 'Could not load legend.';
   }
 }
+
+await renderLegend();
 
 
 await renderLegend();
@@ -306,17 +318,10 @@ async function refreshStatistics() {
 }
 
 
-// --------------------------------------------------
 // 7. Listen for map navigation
-// --------------------------------------------------
-
-const leafletMap = ngwMap.mapAdapter.map;
-
-leafletMap.on('moveend', refreshStatistics);
 
 
-// --------------------------------------------------
-// 8. Load initial statistics
-// --------------------------------------------------
+ngwMap.emitter.on('moveend', refreshStatistics);
 
+// Load the initial statistics
 await refreshStatistics();
