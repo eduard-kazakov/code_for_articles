@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
+    <title>World Cities Dashboard</title>
+  </head>
+
+  <body>
+    <div id="app">
+      <aside class="sidebar">
+        <header>
+          <h1>World Cities</h1>
+          <p>
+            Interactive population dashboard
+            powered by NextGIS Web
+          </p>
+        </header>
+
+        <section>
+          <div id="legend">
+            Loading legend...
+          </div>
+        </section>
+
+        <section>
+          <h2>Population distribution</h2>
+
+          <p id="statistics-status">
+            Loading statistics...
+          </p>
+
+          <div class="chart-container">
+            <canvas id="population-chart"></canvas>
+          </div>
+
+        </section>
+      </aside>
+
+      <main id="map"></main>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
